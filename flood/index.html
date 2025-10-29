@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flood Detection System</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <script src="https://kit.fontawesome.com/a2e0c0a0e4.js" crossorigin="anonymous"></script>
+</head>
+<body class="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100 p-8">
+
+  <div id="app"></div>
+
+  <script>
+    const app = document.getElementById("app");
+    let users = { admin: "1234" };
+    let currentView = "login";
+    let loggedInUser = null;
+
+    function renderLogin() {
+      app.innerHTML = `
+        <div class="max-w-md mx-auto">
+          <div class="bg-white rounded-2xl shadow-2xl p-8">
+            <div class="text-center mb-8">
+              <div class="inline-block p-4 bg-blue-100 rounded-full mb-4">
+                <i class="fas fa-water text-4xl text-blue-600"></i>
+              </div>
+              <h1 class="text-3xl font-bold text-gray-800">🌊 Flood Detection System</h1>
+            </div>
+
+            <div class="flex gap-2 mb-6">
+              <button id="loginTab" class="flex-1 py-2 rounded-lg font-semibold ${currentView === 'login' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}">Login</button>
+              <button id="signupTab" class="flex-1 py-2 rounded-lg font-semibold ${currentView === 'signup' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-600'}">Sign Up</button>
+            </div>
+
+            <div id="message" class="mb-4"></div>
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Username</label>
+                <input id="username" type="text" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Enter username"/>
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                <input id="password" type="password" class="w-full px-4 py-2 border border-gray-300 rounded-lg" placeholder="Enter password"/>
+              </div>
+              <button id="authButton" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700">${currentView === 'login' ? 'Login' : 'Sign Up'}</button>
+              ${currentView === 'login' ? '<p class="text-sm text-gray-600 text-center">Demo: admin / 1234</p>' : ''}
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("loginTab").onclick = () => { currentView = "login"; renderLogin(); };
+      document.getElementById("signupTab").onclick = () => { currentView = "signup"; renderLogin(); };
+
+      document.getElementById("authButton").onclick = () => {
+        const user = document.getElementById("username").value;
+        const pass = document.getElementById("password").value;
+        const msg = document.getElementById("message");
+
+        if (currentView === "login") {
+          if (users[user] && users[user] === pass) {
+            loggedInUser = user;
+            renderDashboard();
+          } else {
+            msg.innerHTML = `<div class='bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded'>❌ Invalid credentials</div>`;
+          }
+        } else {
+          if (users[user]) {
+            msg.innerHTML = `<div class='bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded'>⚠ Username exists</div>`;
+          } else if (user && pass) {
+            users[user] = pass;
+            msg.innerHTML = `<div class='bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded'>✅ Account created!</div>`;
+            setTimeout(() => { currentView = "login"; renderLogin(); }, 1500);
+          }
+        }
+      };
+    }
+
+    function renderDashboard() {
+      app.innerHTML = `
+        <div class="max-w-7xl mx-auto">
+          <div class="bg-white rounded-2xl shadow-xl p-8 mb-6">
+            <div class="flex justify-between items-center mb-6">
+              <h1 class="text-4xl font-bold text-gray-800">🌊 Flood Detection System</h1>
+              <div class="flex items-center gap-4">
+                <span class="text-sm text-green-600 font-semibold">✅ Logged in as ${loggedInUser}</span>
+                <button id="logout" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600">Logout</button>
+              </div>
+            </div>
+
+            <h2 class="text-2xl font-bold text-gray-700 mb-6">📊 Flood Data Visualization Dashboard</h2>
+
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <i class="fas fa-cloud-rain text-blue-600"></i> 🌧 Rainfall Analysis
+              </h3>
+              <canvas id="rainChart" height="120"></canvas>
+            </div>
+
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <i class="fas fa-thermometer-half text-green-600"></i> 🌡 Weather Overview
+              </h3>
+              <canvas id="weatherChart" height="120"></canvas>
+            </div>
+
+            <div class="mb-8">
+              <h3 class="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                <i class="fas fa-tachometer-alt text-orange-600"></i> 🌊 Flood Risk Prediction
+              </h3>
+              <div id="sliders" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6"></div>
+              <div id="prediction" class="rounded-xl p-6 mb-6"></div>
+              <canvas id="probChart" height="120"></canvas>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById("logout").onclick = () => { loggedInUser = null; renderLogin(); };
+
+      const rainfallData = [
+        { date: 'Jan', s1: 45, s2: 52, s3: 38 },
+        { date: 'Feb', s1: 62, s2: 48, s3: 55 },
+        { date: 'Mar', s1: 78, s2: 85, s3: 72 },
+        { date: 'Apr', s1: 120, s2: 105, s3: 130 },
+        { date: 'May', s1: 95, s2: 110, s3: 88 },
+        { date: 'Jun', s1: 180, s2: 165, s3: 175 },
+        { date: 'Jul', s1: 220, s2: 235, s3: 210 },
+        { date: 'Aug', s1: 195, s2: 188, s3: 205 },
+      ];
+
+      const weatherData = [
+        { temp: 25, humidity: 65 }, { temp: 28, humidity: 70 },
+        { temp: 30, humidity: 75 }, { temp: 32, humidity: 80 },
+        { temp: 27, humidity: 68 }, { temp: 29, humidity: 72 },
+        { temp: 31, humidity: 78 }, { temp: 26, humidity: 66 },
+      ];
+
+      const rainCtx = document.getElementById("rainChart").getContext("2d");
+      new Chart(rainCtx, {
+        type: "line",
+        data: {
+          labels: rainfallData.map(d => d.date),
+          datasets: [
+            { label: "Station 1", data: rainfallData.map(d => d.s1), borderColor: "#3B82F6", fill: false },
+            { label: "Station 2", data: rainfallData.map(d => d.s2), borderColor: "#10B981", fill: false },
+            { label: "Station 3", data: rainfallData.map(d => d.s3), borderColor: "#F59E0B", fill: false }
+          ]
+        }
+      });
+
+      const weatherCtx = document.getElementById("weatherChart").getContext("2d");
+      new Chart(weatherCtx, {
+        type: "scatter",
+        data: {
+          datasets: [{
+            label: "Temperature vs Humidity",
+            data: weatherData.map(d => ({ x: d.temp, y: d.humidity })),
+            backgroundColor: "#8B5CF6"
+          }]
+        },
+        options: {
+          scales: {
+            x: { title: { display: true, text: "Temperature (°C)" } },
+            y: { title: { display: true, text: "Humidity (%)" } }
+          }
+        }
+      });
+
+      let rainfall = 150, drainageEff = 0.7, waterLevel = 2.5, soilMoisture = 0.6;
+      function updatePrediction() {
+        let score = 0;
+        if (rainfall > 200) score += 0.4; else if (rainfall > 150) score += 0.25; else if (rainfall > 100) score += 0.15;
+        if (drainageEff < 0.5) score += 0.3; else if (drainageEff < 0.7) score += 0.15;
+        if (waterLevel > 4) score += 0.3; else if (waterLevel > 3) score += 0.2; else if (waterLevel > 2) score += 0.1;
+        if (soilMoisture > 0.8) score += 0.2; else if (soilMoisture > 0.6) score += 0.1;
+
+        const floodProb = Math.min(score, 0.99);
+        const isHighRisk = floodProb > 0.5;
+
+        document.getElementById("prediction").innerHTML = `
+          <div class="flex items-center gap-4 ${isHighRisk ? 'bg-red-100 border-2 border-red-500' : 'bg-green-100 border-2 border-green-500'} rounded-xl p-6">
+            <i class="fas ${isHighRisk ? 'fa-exclamation-triangle text-red-600' : 'fa-check-circle text-green-600'} text-4xl"></i>
+            <div>
+              <h4 class="text-2xl font-bold text-gray-800 mb-2">Prediction Result:</h4>
+              <p class="text-xl font-semibold ${isHighRisk ? 'text-red-700' : 'text-green-700'}">
+                ${isHighRisk ? `🚨 High Risk of Flood! (${(floodProb*100).toFixed(1)}%)` : `✅ No Flood Expected (${(floodProb*100).toFixed(1)}%)`}
+              </p>
+            </div>
+          </div>
+        `;
+
+        probChart.data.datasets[0].data = [ (1 - floodProb)*100, floodProb*100 ];
+        probChart.update();
+      }
+
+      const sliders = document.getElementById("sliders");
+      sliders.innerHTML = `
+        ${[
+          { id:"rain", label:"Rainfall (mm)", min:50, max:300, val:rainfall },
+          { id:"drain", label:"Drainage Efficiency", min:0.3, max:1.0, step:0.01, val:drainageEff },
+          { id:"water", label:"Water Level (m)", min:1, max:5, step:0.1, val:waterLevel },
+          { id:"soil", label:"Soil Moisture", min:0.2, max:1, step:0.01, val:soilMoisture }
+        ].map(s => `
+          <div class='bg-gray-50 rounded-lg p-6'>
+            <label class='block text-sm font-semibold text-gray-700 mb-2'>${s.label}: <span id='val-${s.id}'>${s.val}</span></label>
+            <input id='${s.id}' type='range' min='${s.min}' max='${s.max}' step='${s.step||1}' value='${s.val}' class='w-full'>
+          </div>
+        `).join("")}
+      `;
+
+      ["rain","drain","water","soil"].forEach(id => {
+        document.getElementById(id).oninput = e => {
+          const val = parseFloat(e.target.value);
+          document.getElementById(`val-${id}`).innerText = val.toFixed(2);
+          if (id==="rain") rainfall = val;
+          if (id==="drain") drainageEff = val;
+          if (id==="water") waterLevel = val;
+          if (id==="soil") soilMoisture = val;
+          updatePrediction();
+        };
+      });
+
+      const probCtx = document.getElementById("probChart").getContext("2d");
+      const probChart = new Chart(probCtx, {
+        type: "bar",
+        data: {
+          labels: ["No Flood", "Flood"],
+          datasets: [{ label: "Probability (%)", data: [50,50], backgroundColor: ["#10B981","#EF4444"] }]
+        },
+        options: { scales: { y: { beginAtZero: true, title: { display: true, text: "Probability (%)" } } } }
+      });
+
+      updatePrediction();
+    }
+
+    renderLogin();
+  </script>
+</body>
+</html>
